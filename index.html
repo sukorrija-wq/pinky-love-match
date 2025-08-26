@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kalkulator Cinta – Keserasian Nama</title>
+  <meta name="description" content="Masukkan nama anda dan nama si dia. Kira % keserasian cinta secara serta-merta dan kongsikan!" />
+  <meta name="theme-color" content="#ec4899" />
+  <meta property="og:title" content="Kalkulator Cinta – Keserasian Nama" />
+  <meta property="og:description" content="Saya baru cuba kalkulator keserasian nama. Jom cuba anda & si dia!" />
+  <meta property="og:type" content="website" />
+  <style>
+    :root{
+      --bg:#fdf2f8;          /* pink-50 */
+      --card:#fce7f3;        /* pink-100 */
+      --card-2:#fbcfe8;      /* pink-200 */
+      --ink:#831843;         /* pink-900 */
+      --muted:#9d174d;       /* pink-800 */
+      --brand:#ec4899;       /* pink-500 */
+      --brand-2:#db2777;     /* pink-600 */
+      --ok:#10b981;          /* emerald-500 */
+      --warn:#f59e0b;        /* amber-500 */
+      --danger:#ef4444;      /* red-500 */
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#3b0a2a; --card:#6b103b; --card-2:#8b144b; --ink:#ffe4ef; --muted:#ffd0e4; }
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans",sans-serif;background:
+      radial-gradient(1200px 800px at 0% -10%, rgba(236,72,153,.15), transparent),
+      radial-gradient(1200px 800px at 100% 110%, rgba(219,39,119,.15), transparent), var(--bg);color:var(--ink)}
+    .container{max-width:720px;margin:0 auto;padding:24px}
+    .badge{display:inline-flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);background:linear-gradient(135deg,rgba(236,72,153,.15),rgba(219,39,119,.15));border:1px solid rgba(0,0,0,.08);padding:6px 10px;border-radius:999px}
+    h1{font-size:28px;margin:10px 0 6px}
+    .sub{color:var(--muted);margin:0 0 16px}
+    .card{background:linear-gradient(180deg, var(--card), var(--card-2));border:1px solid rgba(0,0,0,.06);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+    .section{padding:18px}
+    .row{display:grid;gap:12px}
+    label{font-weight:600}
+    input{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:#fff8fb;outline:none}
+    input:focus{border-color:var(--brand);box-shadow:0 0 0 2px rgba(236,72,153,.25)}
+    .btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg, var(--brand), var(--brand-2));color:white;border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;transition:transform .08s ease,opacity .2s}
+    .btn.secondary{background:transparent;border:1px solid rgba(0,0,0,.15);color:var(--ink)}
+    .btn:active{transform:translateY(1px)}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .meter{height:18px;background:rgba(0,0,0,.08);border-radius:999px;overflow:hidden}
+    .bar{height:100%;width:0%;background:linear-gradient(90deg, #f472b6, #db2777);transition:width .6s ease}
+    .big{font-size:40px;font-weight:900}
+    .muted{color:var(--muted)}
+    .pill{display:inline-flex;gap:8px;align-items:center;border:1px solid rgba(0,0,0,.12);border-radius:999px;padding:6px 10px}
+    footer{margin-top:18px;color:var(--muted);font-size:12px}
+    .center{display:flex;align-items:center;justify-content:center}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">💘 Kalkulator Keserasian Nama</div>
+    <h1>Kalkulator Cinta – % Keserasian</h1>
+    <p class="sub">Masukkan nama anda dan nama si dia. Kami kira tahap keserasian (sekadar fun 😉).</p>
+
+    <div class="card" id="app"></div>
+
+    <footer>
+      Dibangunkan oleh <strong>Lisa ChatGPT</strong> · Powered by <strong>Sukor Rija Legacy</strong>
+    </footer>
+  </div>
+
+<script>
+(function(){
+  const $app = document.getElementById('app');
+
+  function norm(s){
+    return (s||'').toLowerCase()
+      .replace(/\s+/g,'')              // buang ruang
+      .replace(/[^a-z\u00C0-\u024f]/g,''); // huruf sahaja (latin + diakritik)
+  }
+
+  // Hash deterministik, tak ikut susunan: gabung nama yang telah diurutkan
+  function loveScore(name1, name2){
+    const a = norm(name1), b = norm(name2);
+    if(!a || !b) return 0;
+    const combo = [a,b].sort().join('|');
+    // djb2 hash
+    let h = 5381;
+    for(let i=0;i<combo.length;i++){
+      h = ((h << 5) + h) + combo.charCodeAt(i);
+      h = h & 0xffffffff;
+    }
+    // jadikan 0..100, elak terlalu ekstrem: clamp 7..97
+    let pct = Math.abs(h) % 101; // 0..100
+    if(pct < 7) pct = 7; if(pct > 97) pct = 97;
+    return pct;
+  }
+
+  function tier(p){
+    if(p >= 85) return {key:'soulmate', label:'Soulmate Vibes', emoji:'💞', tip:'Serasi gila! Berani ambil langkah seterusnya—tapi kekal matang & hormat.'};
+    if(p >= 60) return {key:'sweet', label:'Sweet Match', emoji:'💕', tip:'Potensi ada! Teruskan kenal hati budi, komunikasi itu kunci.'};
+    if(p >= 40) return {key:'neutral', label:'Boleh Diusahakan', emoji:'🙂', tip:'Slow & steady. Cari persamaan minat dan nilai hidup.'};
+    return {key:'low', label:'Kawan Dulu', emoji:'🤝', tip:'Ambil masa. Mungkin sesuai sebagai kawan—tak semestinya tak jadi apa-apa!'};
+  }
+
+  function setParams(n1,n2,p){
+    const url = new URL(location.href);
+    url.searchParams.set('a', n1.trim());
+    url.searchParams.set('b', n2.trim());
+    url.searchParams.set('p', String(p));
+    history.replaceState(null,'',url.toString());
+  }
+
+  function getParams(){
+    const sp = new URLSearchParams(location.search);
+    const a = sp.get('a')||''; const b = sp.get('b')||''; const p = Number(sp.get('p')||'');
+    return {a,b,p: isNaN(p)?null:p};
+  }
+
+  function sharePayload(n1,n2,p){
+    const t = tier(p);
+    const text = `Keserasian ${n1} ❤ ${n2}: ${p}% — ${t.label} ${t.emoji}`;
+    const url = location.href;
+    return {title:'Kalkulator Cinta – Keserasian Nama', text, url};
+  }
+
+  function viewForm(defaultA='', defaultB=''){
+    $app.innerHTML = `
+      <div class="section">
+        <div class="row">
+          <label>Nama Anda</label>
+          <input id="n1" placeholder="cth: Ali" value="${defaultA}" />
+          <label>Nama Si Dia</label>
+          <input id="n2" placeholder="cth: Siti" value="${defaultB}" />
+          <div class="grid-2">
+            <button class="btn" id="calc">Kira Keserasian</button>
+            <button class="btn secondary" id="swap">Tukar Susunan</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('swap').onclick = ()=>{
+      const a = document.getElementById('n1');
+      const b = document.getElementById('n2');
+      const tmp = a.value; a.value = b.value; b.value = tmp;
+    };
+
+    document.getElementById('calc').onclick = ()=>{
+      const a = document.getElementById('n1').value.trim();
+      const b = document.getElementById('n2').value.trim();
+      if(!a || !b){ alert('Masukkan kedua-dua nama.'); return; }
+      const p = loveScore(a,b);
+      setParams(a,b,p);
+      viewResult(a,b,p);
+    };
+  }
+
+  function viewResult(n1,n2,p){
+    const t = tier(p);
+    $app.innerHTML = `
+      <div class="section" style="padding-bottom:0">
+        <div class="pill">💖 Keputusan</div>
+        <h2 style="margin:8px 0 4px">${n1} ❤ ${n2}</h2>
+      </div>
+      <div class="section">
+        <div class="meter"><div class="bar" id="bar" style="width:0%"></div></div>
+        <div style="display:flex;align-items:end;gap:10px;margin-top:8px">
+          <div class="big" id="pct">0%</div>
+          <div class="muted">— ${t.label} ${t.emoji}</div>
+        </div>
+        <p class="muted" id="tip" style="margin-top:6px">${t.tip}</p>
+        <div class="grid-2" style="margin-top:12px">
+          <button class="btn" id="share">Kongsi Result</button>
+          <button class="btn secondary" id="copy">Copy Link</button>
+        </div>
+        <div class="grid-2" style="margin-top:10px">
+          <button class="btn secondary" id="again">Kira Semula</button>
+          <a class="btn secondary center" id="wa" href="#">WhatsApp</a>
+        </div>
+      </div>
+    `;
+
+    // animasi meter
+    requestAnimationFrame(()=>{
+      const bar = document.getElementById('bar');
+      const pct = document.getElementById('pct');
+      let cur = 0; const target = p;
+      const step = ()=>{ cur += Math.max(1, Math.round((target-cur)/10)); if(cur>target) cur=target; bar.style.width = cur+'%'; pct.textContent = cur+'%'; if(cur<target) requestAnimationFrame(step); };
+      step();
+    });
+
+    const data = sharePayload(n1,n2,p);
+
+    document.getElementById('share').onclick = async ()=>{
+      try{ if(navigator.share){ await navigator.share(data); } else { await navigator.clipboard.writeText(`${data.text}\n${data.url}`); alert('Teks & pautan disalin.'); } }catch{}
+    };
+    document.getElementById('copy').onclick = async ()=>{
+      try{ await navigator.clipboard.writeText(`${data.text}\n${location.href}`); alert('Pautan disalin ke clipboard.'); }catch{}
+    };
+    document.getElementById('again').onclick = ()=>{ viewForm(n1,n2); };
+    const wa = document.getElementById('wa');
+    wa.href = 'https://wa.me/?text=' + encodeURIComponent(`${data.text}\n${location.href}`);
+  }
+
+  // init: jika ada param, terus papar result
+  const params = getParams();
+  if(params.a && params.b && params.p!==null){ viewResult(params.a, params.b, params.p); }
+  else { viewForm(); }
+})();
+</script>
+</body>
+</html>
